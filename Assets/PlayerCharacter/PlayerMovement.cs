@@ -4,6 +4,16 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour {
 
+    public bool isWallSliding;
+    public float wallSlidingSpeed;
+    public bool isWallJumping;
+    private float wallJumpingDirection;
+    public float wallJumpingTime = 0.05f;
+    private float wallJumpingCounter;
+    public float wallJumpingDuration = 0.15f;
+    public Vector2 wallJumpingPower = new Vector2(2f, 5f);
+
+    public bool isTouchingWall;
     public bool canDash = true;
     public bool isDashing;
     public float dashPower = 3f;
@@ -19,21 +29,26 @@ public class PlayerMovement : MonoBehaviour {
     public Rigidbody2D body;
     public BoxCollider2D groundCheck;
     public LayerMask groundMask;
+    public BoxCollider2D wallCheck;
+    public LayerMask wallMask;
     float xInput;
     float yInput;
 
     void FixedUpdate() {
-        if (isDashing) return;
+        if (isDashing || isWallJumping) return;
         CheckGround();
+        CheckWallTouch();
         ApplyFriction();
         MoveWithInput();
     }
 
     void Update() {
-        if (isDashing) return;
+        if (isDashing || isWallJumping) return;
         GetInput();
         HandleJump();
         HandleDash();
+        WallSlide();
+        WallJump();
     }
 
     private void MoveWithInput() {
@@ -49,6 +64,49 @@ public class PlayerMovement : MonoBehaviour {
 
     }
 
+    private void WallJump() {
+        if (isWallSliding) {
+            isWallJumping = false;
+            wallJumpingDirection = -transform.localScale.x;
+            wallJumpingCounter = wallJumpingTime;
+
+            CancelInvoke(nameof(StopWallJumping));
+        } else {
+            wallJumpingCounter = 0;
+            // wallJumpingCounter = Time.deltaTime; // double wall jump
+        }
+
+        if (Input.GetButtonDown("Jump") && wallJumpingCounter > 0f) {
+            isWallJumping = true;
+            body.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
+            wallJumpingCounter = 0f;
+
+            if (transform.localScale.x != wallJumpingDirection) {
+                transform.localScale = new Vector3(transform.localScale.x*-1, 1, 1);
+            }
+
+            Invoke(nameof(StopWallJumping), wallJumpingDuration);
+        }
+    }
+
+    private void StopWallJumping() {
+        isWallJumping = false;
+    }
+
+
+    private void CheckWallTouch() {
+        isTouchingWall = Physics2D.OverlapAreaAll(wallCheck.bounds.min, wallCheck.bounds.max, wallMask).Length > 0;
+    }
+
+    private void WallSlide() {
+        if (isTouchingWall && !grounded && xInput != 0) {
+            isWallSliding = true;
+            body.velocity = new Vector2(body.velocity.x, Math.Clamp(body.velocity.y, -wallSlidingSpeed, float.MaxValue));
+        } else {
+            isWallSliding = false;
+        }
+    }
+
     private void HandleJump() {
         if (Input.GetButtonDown("Jump") && grounded) {
             body.velocity = new Vector2(body.velocity.x, jumpSpeed);
@@ -56,15 +114,6 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     private void HandleDash() {
-        /*
-        if (Input.GetKeyDown(KeyCode.C) && !isDashing) {
-            isDashing = true;
-            float originalGravScale = body.gravityScale;
-            body.gravityScale = 0;
-            body.velocity = new Vector2(body.velocity.x + dashSpeed * Mathf.Sign(body.velocity.x), 0f);
-            isDashing = false;
-            body.gravityScale = originalGravScale;
-        }*/
         if (Input.GetKeyDown(KeyCode.C) && canDash) {
             StartCoroutine(nameof(PlayerDash));
         }
