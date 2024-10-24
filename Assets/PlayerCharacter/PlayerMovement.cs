@@ -23,6 +23,7 @@ public class PlayerMovement : MonoBehaviour {
     public float acceleration;
     public float groundSpeed;
     public float jumpSpeed;
+    public bool doubleJump;
     [Range(0f, 1f)]
     public float dragDecay;
     public bool grounded;
@@ -108,8 +109,15 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     private void HandleJump() {
-        if (Input.GetButtonDown("Jump") && grounded) {
+        if (grounded && !Input.GetButton("Jump")) {
+            doubleJump = false;
+        } else if (isWallSliding) {
+            doubleJump = !doubleJump;
+        }
+
+        if (Input.GetButtonDown("Jump") && (grounded || doubleJump)) {
             body.velocity = new Vector2(body.velocity.x, jumpSpeed);
+            doubleJump = !doubleJump;
         }
 
         if (Input.GetButtonUp("Jump") && body.velocity.y > 0f) {
