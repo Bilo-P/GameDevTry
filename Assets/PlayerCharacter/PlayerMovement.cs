@@ -111,6 +111,10 @@ public class PlayerMovement : MonoBehaviour {
         if (Input.GetButtonDown("Jump") && grounded) {
             body.velocity = new Vector2(body.velocity.x, jumpSpeed);
         }
+
+        if (Input.GetButtonUp("Jump") && body.velocity.y > 0f) {
+            body.velocity = new Vector2(body.velocity.x, body.velocity.x * 0.5f);
+        }
     }
 
     private void HandleDash() {
