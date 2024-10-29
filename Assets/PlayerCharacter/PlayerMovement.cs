@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour {
@@ -32,6 +33,8 @@ public class PlayerMovement : MonoBehaviour {
     public LayerMask groundMask;
     public BoxCollider2D wallCheck;
     public LayerMask wallMask;
+    public float glidingSpeed;
+    public float glidingDecay;
     float xInput;
     float yInput;
 
@@ -48,8 +51,17 @@ public class PlayerMovement : MonoBehaviour {
         GetInput();
         HandleJump();
         HandleDash();
+        HandleGliding();
         WallSlide();
         WallJump();
+    }
+
+    private void HandleGliding() {
+        if (Input.GetKey(KeyCode.LeftShift)) {
+            if (body.velocity.y <= 0) {
+                body.velocity = new Vector2(body.velocity.x * glidingDecay, -glidingSpeed);
+            }
+        }
     }
 
     private void MoveWithInput() {
@@ -126,7 +138,7 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     private void HandleDash() {
-        if (Input.GetKeyDown(KeyCode.C) && canDash) {
+        if (Input.GetKeyDown(KeyCode.LeftControl) && canDash) {
             StartCoroutine(nameof(PlayerDash));
         }
     }
